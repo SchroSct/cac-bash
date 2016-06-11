@@ -1,16 +1,134 @@
 #!/bin/bash
 
+## Run some sanity checks before we start. (Palmed off to a separate file for clarity.)
+
+if [ -f cac-sanity.bash ]; then
+    . cac-sanity.bash
+else
+    echo "ERROR: No cac-sanity.bash file.  This is required to check all the parts of this script are available."
+    exit 1
+fi
+
+while [[ $# > 1 ]]; do
+	switch="$1"
+
+	case $switch in
+	    -a|--alias)
+		    ALIAS="$2"
+		    shift 2 # past argument
+	    	    ;;
+	    -a=*|--alias=*)
+		    ALIAS="${i#*=}"
+		    shift # past argument=value
+	    	    ;;
+	    -l|--login)
+		    LOGIN="$2"
+		    shift 2 # past argument
+	    	    ;;
+	    -l=*|--login=*)
+		    LOGIN="${i#*=}"
+		    shift # past argument=value
+		    ;;
+	    -k|--key)
+		    KEY="$2"
+		    shift 2 # past argument
+		    ;;
+	    -k=*|--key=*)
+		    KEY="${i#*=}"
+		    shift # past argument=value
+		    ;;
+	    *)
+		    echo "Unknown option: $switch"
+		    exit 1
+		    ;;
+	esac
+done
+
+#echo "$ALIAS"
+#echo "$KEY"
+#echo "$LOGIN"
+
+## If we don't have a key specified, or we do have an alias or login specified, then we *must* import cac-config.bash
+
+if [ -z "$KEY" ] && [ -f cac-config.bash ]; then
+    . cac-config.bash
+else
+    echo "ERROR: No config file.  Please copy the file cac-config.example.bash to cac-config.bash and edit it or use the --login and --key switches."
+fi
+
+## Now we either have a key, or an alias or login and a database.
+
+
+if [ -n "$LOGIN" ] && [ -n "$KEY" ]; then
+    echo "We have a login and key."
+    : ## If we have a login and key, do nothing.
+elif [ ${#credentials0[@]} -ne 0 ]; then
+    ## Check to make sure we have credentials to search.
+    if [ -n "$LOGIN" ] && ! [ -n "$KEY" ]; then
+        ## If we have a login, find the key.
+	#echo "We have a login but no key"
+        for credel in ${!credentials*}; do
+            #echo "Looking at $credel";
+	    eval logintemp=\${$credel['login']}
+
+            if [[ "$logintemp" == "$LOGIN" ]]; then
+		#echo "Alias matched."
+                eval LOGIN=\${$credel['login']}
+                eval KEY=\${$credel['key']}
+            fi
+        done
+    else
+        #echo "We have neither, so look for alias."
+        ## If the alias is not specified, use "default"
+        if [ -z "$ALIAS" ]; then
+            ALIAS="default"
+        fi
+        ## Find the login and key from the alias.
+        for credel in ${!credentials*}; do
+            #echo "Looking at $credel";
+	    eval aliastemp=\${$credel['alias']}
+
+            if [[ "$aliastemp" == "$ALIAS" ]]; then
+		#echo "Alias matched."
+                eval LOGIN=\${$credel['login']}
+                eval KEY=\${$credel['key']}
+            fi
+        done
+    fi
+else
+   echo "ERROR: No login and key supplied, and no credentials to search."
+   exit 1
+fi
+
+#echo "$ALIAS"
+#echo "$KEY"
+#echo "$LOGIN"
+
+. cac-api-config.bash
+. cac-functions.bash
+
 usage () 
 {
     cat <<EOT
 	CloudAtCost API CLI
-	Usage: cac [action]
+	Usage: cac [options] [action]
 	Where: action - is one of:
 		build - build a VM
 		delete - delete a VM
 		list - list VMs
 		reset - reset a VM
 		templates - list templates
+
+               options - can include:
+		--alias=[alias]                ## Will look up alias in cac-config.bash (MOST PRIVATE)
+                OR
+		--login=[login]                ## Will look up login in cac-config.bash (LESS PRIVATE)
+                OR
+		--login=[login] --key=[key]    ## Will ignore cac-config.bash (PUBLIC - key will end up in logs)
+
+                If no alias or login/key pair is specified on the command line, 
+                we will use the login/key pair specified as the "default" alias in the config file, 
+                if it exists.
 
 	TODO:
 		power - power operations (on, off, reset)
@@ -19,6 +137,7 @@ usage ()
 		rdns - add a reverse DNS to a VM
 		console - get the console
 		runmode - change the VM runmode (normal,safe) default: safe
+		deps - check to make sure that all program dependencies are satisfied
 		
 EOT
 }
@@ -28,6 +147,4 @@ if [ "$#" -lt 1 ]; then
     exit 0
 fi
 
-. cac-$1.bash
-
-
+$1

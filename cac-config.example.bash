@@ -1,21 +1,20 @@
-key="APIKEYFROMTHEWEBSITEGOESHERE"
-login="YOUREMAIL@ADDRESS.COMGOESHERE"
+declare -A credentials0
+credentials0[alias]='default'
+credentials0[login]="YOUREMAIL@ADDRESS.COMGOESHERE"
+credentials0[key]="APIKEYFROMTHEWEBSITEGOESHERE"
 
+#################################################
+## If you wish to manage more accounts copy    ##
+## the template below, increasing index for    ##
+## each alias.                                 ##
+## You should only have at most one "default". ##
+## No "default" alias will result in a warning ##
+## if the alias is not specified on the        ##
+## --alias switch.                             ##
+#################################################
 
-#########################################
-## DO NOT EDIT BELOW - SPECIFIC TO CAC ##
-#########################################
+#declare -A credentials1
+#credentials1[alias]='myalias'
+#credentials1[login]="YOUREMAIL@ADDRESS.COMGOESHERE"
+#credentials1[key]="APIKEYFROMTHEWEBSITEGOESHERE"
 
-url="https://panel.cloudatcost.com/api/v1/"
-declare -A uri
-uri[list]="listservers.php"
-uri[templates]="listtemplates.php"
-uri[tasks]="listtasks.php"
-uri[powerop]="powerop.php"
-uri[rename]="renameserver.php"
-uri[rdns]="rdns.php"
-uri[console]="console.php"
-uri[runmode]="runmode.php"
-uri[build]="cloudpro/build.php"
-uri[delete]="cloudpro/delete.php"
-uri[resources]="cloudpro/resources.php"
